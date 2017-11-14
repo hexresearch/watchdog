@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import Config
 import Utils
 import Reboot
+import Signal
 import TimeVar
 
 main :: IO ()
@@ -25,8 +26,9 @@ main = configApp desc runConfig
 runConfig :: Config -> IO ()
 runConfig cfg = checkConfig cfg $ do
   tv <- initTimeVar
-  runTcpListener  cfg tv
-  runRebootWorker cfg tv
+  mapM_ (\serverCfg -> runTcpListener    serverCfg tv) (appServer cfg)
+  mapM_ (\signalCfg -> runSignalListener signalCfg tv) (appSignal cfg)
+  runRebootWorker   cfg tv
   waitForever
 
 checkConfig :: Config -> IO () -> IO ()
@@ -43,17 +45,24 @@ checkConfig cfg proc = do
     logFileNonExistMsg file = [qc|Error: Log file {file} does not exist.
 Check config field lastRebootTimeFilePath|]
 
-runTcpListener :: Config -> TimeVar -> IO ()
+runTcpListener :: ServerConfig -> TimeVar -> IO ()
 runTcpListener cfg tv = void $ forkIO $ do
   serve host port $ \(connectionSocket, remoteAddr) -> do
     resp <- recv connectionSocket 1
     when (isJust resp) $ do
       updateTime tv
   where
-    serverCfg = appServer cfg
-    host = Host $ T.unpack $ serverHost serverCfg
-    port = show $ serverPort serverCfg
+    host = Host $ T.unpack $ serverHost cfg
+    port = show $ serverPort cfg
 
+runSignalListener :: String -> TimeVar -> IO ()
+runSignalListener sigText tv =
+  case parseSignal sigText of
+    Nothing -> error $ failedToParseSignalMsg sigText
+    Just sig -> initSignalHandler sig $ updateTime tv
+  where
+    failedToParseSignalMsg sig = [qc|Failed to parse signal {sigText}.
+Check config field signal.|]
 
 runRebootWorker :: Config -> TimeVar -> IO ()
 runRebootWorker cfg tv = runTimeCheckWorker cfg tv (reboot cfg)

@@ -1,6 +1,7 @@
 server:
   host: "localhost"
   port: 8080
+signal: SIGUSR1
 duration: 10
 rebootCmd: "echo REBOOT ME"
 # lastRebootTimeFilePath: "reboot-log.txt"
