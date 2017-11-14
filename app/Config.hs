@@ -11,7 +11,8 @@ import GHC.Generics
 import System.ConfigApp
 
 data Config = Config {
-    appServer   :: ServerConfig
+    appServer   :: Maybe ServerConfig
+  , appSignal   :: Maybe String
   , appDuration :: NominalDiffTime
   , appRebootCmd :: Text
   , appLastRebootTimeFilePath :: Maybe ConfigPath
