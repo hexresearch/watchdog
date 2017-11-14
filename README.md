@@ -59,3 +59,23 @@ It will not reboot while we invoke in the second terminal:
 ~~~
 pkill --signal USR1 watchdog
 ~~~
+
+
+### Example for systemd service script
+
+Supply needed path to app and config file and put this
+file to `/etc/systemd/system/` to define systemd service.
+
+~~~
+# location: /etc/systemd/system/
+[Unit]
+Description=Auto-restart utility
+After=multi-user.target
+
+[Service]
+Type=notify
+ExecStart=/path/to/watchdog --conf /path/to/config.yaml &
+
+[Install]
+WantedBy=multi-user.target
+~~~
